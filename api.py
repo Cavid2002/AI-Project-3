@@ -101,4 +101,4 @@ def get_board_map(gameId: str) -> dict:
     return res
 
 
-create_team("TestTest")
+# create_team("TestTest")
