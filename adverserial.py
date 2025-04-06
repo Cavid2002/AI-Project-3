@@ -4,22 +4,32 @@ import api
 
 class GenTicTacToe():
 
-    human = 'X'
-    ai = 'O'
+    PROCEED = 0x3F3F
+    INFINITY = 1000000
 
     def __init__(self, n: int, m: int):
+        self.AI = 'O'
+        self.OP = 'X'
         self.m = m
         self.n = n
         self.board = self.create_board(self.n)
         self.opMoveHistory = set()
         self.aiMoveHistory = set()
-        self.print_board()
-
+        self.lastMove = (-1, -1)
+        self.lastMoveSide = self.OP
     
     def create_board(self, n: int) -> List[List[str]]:
         board = [['-' for _ in range(n)] for _ in range(n)]
         return board
 
+
+    def move_isvalid(self, r: int, c: int) -> bool:
+        if r >= self.n or r < 0:
+            return False
+        if c >= self.n or c < 0:
+            return False
+        return self.board[r][c] == '-'
+    
 
     def print_board(self):
         for i in range(self.n):
@@ -28,134 +38,153 @@ class GenTicTacToe():
             print()
         return
     
-    def print_result(self, score: int):
-        if score == 0: 
-            print("TIE")
-        winner = "Human" if score == 1 else "AI"
-        print(f"{winner} Won!")
     
-
-    def is_valid(self, row: int, col: int) -> bool:
-        if row >= self.n or row < 0: 
-            return False
-        if col >= self.n or col < 0: 
-            return False
-        return self.board[row][col] == "-"
-
-    
-    def checkWinner(self, moveHistory: Set[Tuple]):
-        dc = [1, -1, 0, 0, 1, -1, 1, -1]
-        dr = [0, 0, 1, -1, -1, -1, 1, 1]
-        for move in moveHistory:
-            for i in range(len(dr)):
-                count = 1
-                for step in range(1, self.m):
-                    nr = move[0] + step * dr[i]
-                    nc = move[1] + step * dc[i]
-                    if (nr, nc) not in moveHistory:
-                        break
-                    count += 1
-                if count == self.m:
-                    return True
-        return False
-
-        
-
-    def evaluate(self):
-        if self.checkWinner(self.aiMoveHistory):
-            return -1
-        if self.checkWinner(self.opMoveHistory):
-            return 1
-        if len(self.get_all_aviable_moves()) == 0:
-            return 0
-        return -5
-        
-
-    def get_all_aviable_moves(self) -> List[Tuple]:
-        allMoves = []
+    def get_all_available_moves(self) -> List[Tuple]:
+        all_moves = []
         for i in range(self.n):
             for j in range(self.n):
-                if(self.board[i][j] == "-"):
-                    allMoves.append((i, j))
-        return allMoves
-
+                if self.board[i][j] == '-':
+                    all_moves.append((i, j))
+        return all_moves
     
-    def ai_move(self):
-        allMoves = self.get_all_aviable_moves()
-        if len(allMoves) == 0:
-            return
-        bestVal = 999999999
-        bestMove = (-1, -1)
-        for move in allMoves:
-            self.board[move[0]][move[1]] = GenTicTacToe.ai
-            value = self.minimax(0, False)
-            self.board[move[0]][move[1]] = '-'
-            if(value < bestVal):
-                bestMove = (move[0], move[1])
-                bestVal = value
-        self.board[bestMove[0]][bestMove[1]] = GenTicTacToe.ai
-        self.aiMoveHistory.add((bestMove[0], bestMove[1]))
-        return   
-            
+    
     def op_move(self):
         self.print_board()
         while True:
-            r, c = map(int, input("Make a move (row col): ").split())
-            if self.is_valid(r, c):
+            r, c = map(int, input("Select row, col:").split())
+            if self.move_isvalid(r, c):
                 break
-            print("Move is invalid")
-        self.board[r][c] = GenTicTacToe.human
+        self.board[r][c] = self.OP
         self.opMoveHistory.add((r, c))
+        self.lastMove = (r, c)
         return
-        
+    
 
-    def minimax(self, depth: int, isMax: bool) -> int:
-        score = self.evaluate()
-        if(score != -5):
-            return score
-        if(isMax == True):
+    def make_move(self, side: str, move: Tuple, moveHistory: Set[Tuple]):
+        moveHistory.add((move[0], move[1]))
+        self.lastMove = (move[0], move[1])
+        self.board[move[0]][move[1]] = side
+
+    
+    def unmake_move(self, move: Tuple, moveHistory: Set[Tuple]):
+        moveHistory.remove((move[0], move[1]))
+        self.board[move[0]][move[1]] = '-'
+    
+    def ai_move(self):
+        best_move = (-1, -1)
+        best_val = 9999999
+        all_moves = self.get_all_available_moves()
+        for move in all_moves:
+            self.make_move(self.AI, move, self.aiMoveHistory)
+            val = self.minimax(True, 0)
+            self.unmake_move(move, self.aiMoveHistory)
+            if val < best_val:
+                best_val = val
+                best_move = (move[0], move[1])
+
+        self.make_move(self.AI, best_move, self.aiMoveHistory)
+        return 
+    
+    
+    def check_winner(self, move_history: Set[Tuple]) -> bool:
+        if self.lastMove == (-1, -1):
+            return False
+
+        direction_pairs = [(0, 1), (1, 0), (1, 1), (1, -1)]
+
+        for (dr1, dc1) in direction_pairs:
+            count = 1  
+            for step in range(1, self.m):
+                nr = self.lastMove[0] + step * dr1
+                nc = self.lastMove[1] + step * dc1
+                if (nr, nc) not in move_history:
+                    break
+                count += 1
+            
+            for step in range(1, self.m):
+                nr = self.lastMove[0] - step * dr1
+                nc = self.lastMove[1] - step * dc1
+                if (nr, nc) not in move_history:
+                    break
+                count += 1
+
+            if count >= self.m:
+                return True
+
+        return False
+    
+    def evaluate(self, isMax: bool, depth: int):
+        if isMax == False and self.check_winner(self.opMoveHistory):
+            return 1 * (GenTicTacToe.INFINITY - depth)
+        if isMax == True and self.check_winner(self.aiMoveHistory):
+            return -1 * (GenTicTacToe.INFINITY - depth)
+        if len(self.get_all_available_moves()) == 0 or depth >= 3:
+            return 0
+        return GenTicTacToe.PROCEED
+ 
+    
+    def minimax(self, isMax: bool, depth: int) -> int:
+        res = self.evaluate(isMax, depth)
+        if res != GenTicTacToe.PROCEED:
+            return res
+
+        if isMax:
             return self.maximizer(depth)
-        else:
-            return self.minimizer(depth)
+        
+        return self.minimizer(depth)
 
     
-    def maximizer(self, depth: int) -> int:
-        allMoves = self.get_all_aviable_moves()
-        maxVal = -99999999
-        for move in allMoves:
-            self.board[move[0]][move[1]] = GenTicTacToe.human
-            maxVal = max(maxVal, self.minimax(depth + 1, False))
-            self.board[move[0]][move[1]] = '-'
-        return maxVal
-    
-    
-    def minimizer(self, depth: int) -> int:
-        allMoves = self.get_all_aviable_moves()
-        minVal = 99999999
-        for move in allMoves:
-            self.board[move[0]][move[1]] = GenTicTacToe.ai
-            minVal = min(minVal, self.minimax(depth + 1, True))
-            self.board[move[0]][move[1]] = '-'
-        return minVal
-    
+    def maximizer(self, depth: int):
+        max_res = -GenTicTacToe.INFINITY
+        all_moves = self.get_all_available_moves()
+        old_last_move = (self.lastMove[0], self.lastMove[1])
+        
+        for move in all_moves:
+            self.make_move(self.OP, move, self.opMoveHistory)
+            max_res = max(max_res, self.minimax(False, depth + 1))
+            self.unmake_move(move, self.opMoveHistory)
+            
 
+        self.lastMove = (old_last_move[0], old_last_move[1])
+        return max_res
+    
+    
+    def minimizer(self, depth: int):
+        min_res = GenTicTacToe.INFINITY
+        all_moves = self.get_all_available_moves()
+        old_last_move = (self.lastMove[0], self.lastMove[1])
+
+        for move in all_moves:
+            self.make_move(self.AI, move, self.aiMoveHistory)
+            min_res = min(min_res, self.minimax(True, depth + 1))
+            self.unmake_move(move, self.aiMoveHistory)
+
+        self.lastMove = (old_last_move[0], old_last_move[1])
+        return min_res
+  
+    
     def gameLoop(self):
         while True:
-            if len(self.get_all_aviable_moves()) == 0:
-                print("Tie")
-                return
-            
+                
             self.op_move()
+            if self.check_winner(self.opMoveHistory):
+                print('OP won')
+                break
             
-            if self.checkWinner(self.opMoveHistory):
-                print("You WON")
-                return
+            if len(self.get_all_available_moves()) == 0:
+                print('TIE')
+                break
 
             self.ai_move()
+            if self.check_winner(self.aiMoveHistory):
+                print('AI won')
+                break
+            if len(self.get_all_available_moves()) == 0:
+                print('TIE')
+                break
 
-            if self.checkWinner(self.aiMoveHistory):
-                print("AI won")
-                return
-            
-                
-        
+        print("AI moves", self.aiMoveHistory)
+        print("OP moves", self.opMoveHistory)
+        self.print_board()
+
+        return
