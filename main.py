@@ -1,4 +1,5 @@
 from adverserial import GenTicTacToe
 
-game = GenTicTacToe(5, 5)
+n, m = map(int, input("Select n, m:").split())
+game = GenTicTacToe(n, m)
 game.gameLoop()
