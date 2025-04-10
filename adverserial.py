@@ -1,5 +1,5 @@
 from typing import List, Tuple, Set
-# import api
+import api
 
 
 class GenTicTacToe():
@@ -11,7 +11,8 @@ class GenTicTacToe():
         self.AI = 'O'
         self.OP = 'X'
         self.m = m
-        self.max_depth = m * m
+        self.max_depth = 3
+        self.radius = 2
         self.n = n
         self.board = self.create_board(self.n)
         self.opMoveHistory = set()
@@ -47,6 +48,36 @@ class GenTicTacToe():
                     all_moves.append((i, j))
         return all_moves
     
+
+    def get_all_neighbouring_moves(self) -> List[Tuple]:
+        radius = self.radius
+        all_moves = []
+        
+        for move in self.opMoveHistory:
+            startr = max(move[0] - radius, 0) 
+            endr = min(move[0] + radius, self.n - 1)  
+            startc = max(move[1] - radius, 0) 
+            endc = min(move[1] + radius, self.n - 1)
+            for i in range(startr, endr + 1):
+                for j in range(startc, endc + 1):
+                    if self.board[i][j] == '-' and (i, j) not in all_moves:
+                        all_moves.append((i, j))
+        
+        
+        for move in self.aiMoveHistory:
+            startr = max(move[0] - radius, 0) 
+            endr = min(move[0] + radius, self.n - 1)  
+            startc = max(move[1] - radius, 0) 
+            endc = min(move[1] + radius, self.n - 1)
+            for i in range(startr, endr + 1):
+                for j in range(startc, endc + 1):
+                    if self.board[i][j] == '-' and (i, j) not in all_moves:
+                        all_moves.append((i, j))
+
+        if not all_moves:
+            return self.get_all_available_moves()
+        return all_moves
+        
     
     def op_move(self) -> Tuple[int, int]:
         self.print_board()
@@ -60,6 +91,9 @@ class GenTicTacToe():
     
 
     def make_move(self, side: str, move: Tuple, moveHistory: Set[Tuple]):
+        if move == (-1, -1):
+            print("ERROR INVALID MOVE")
+            exit(1)
         moveHistory.add((move[0], move[1]))
         self.board[move[0]][move[1]] = side
 
@@ -68,14 +102,17 @@ class GenTicTacToe():
         moveHistory.remove((move[0], move[1]))
         self.board[move[0]][move[1]] = '-'
     
+    
     def ai_move(self) -> Tuple[int, int]:
         best_move = (-1, -1)
-        best_val = GenTicTacToe.INFINITY
-        for move in self.get_all_available_moves():
+        best_val = GenTicTacToe.INFINITY ** 2
+        moves = self.get_all_neighbouring_moves()
+        for move in moves:
             self.make_move(self.AI, move, self.aiMoveHistory)
             val = self.minimax(True, 0, -GenTicTacToe.INFINITY, GenTicTacToe.INFINITY, move)
             self.unmake_move(move, self.aiMoveHistory)
-            if val < best_val:
+            print(val)
+            if val <= best_val:
                 best_val = val
                 best_move = (move[0], move[1])
 
@@ -89,14 +126,14 @@ class GenTicTacToe():
             return res
         
         if isMax == True:
-            return self.maximizer(depth, alpha, beta)
+            return self.maximizer(depth, lastMove, alpha, beta)
         
-        return self.minimizer(depth, alpha, beta)
+        return self.minimizer(depth, lastMove, alpha, beta)
     
 
-    def maximizer(self, depth: int, alpha: int, beta: int):
+    def maximizer(self, depth: int, lastMove: Tuple ,alpha: int, beta: int):
         max_val = -GenTicTacToe.INFINITY
-        for move in self.get_all_available_moves():
+        for move in self.get_all_neighbouring_moves():
             self.make_move(self.OP, move, self.opMoveHistory)
             res = self.minimax(False, depth + 1, alpha, beta, move)
             self.unmake_move(move, self.opMoveHistory)
@@ -108,9 +145,9 @@ class GenTicTacToe():
         
         return max_val
     
-    def minimizer(self, depth: int, alpha: int, beta: int):
+    def minimizer(self, depth: int, lastMove: Tuple, alpha: int, beta: int):
         min_val = GenTicTacToe.INFINITY
-        for move in self.get_all_available_moves():
+        for move in self.get_all_neighbouring_moves():
             self.make_move(self.AI, move, self.aiMoveHistory)
             res = self.minimax(True, depth + 1, alpha, beta, move)
             self.unmake_move(move, self.aiMoveHistory)
@@ -124,23 +161,24 @@ class GenTicTacToe():
 
     def evaluate(self, depth: int, isMax: bool, lastMove: Tuple):
         if isMax == True and self.check_winner(self.aiMoveHistory, lastMove):
-            return -1 * GenTicTacToe.INFINITY
+            return -1 * GenTicTacToe.INFINITY * (self.max_depth - depth)
         if isMax == False and self.check_winner(self.opMoveHistory, lastMove):
-            return 1 * GenTicTacToe.INFINITY
+            return 1 * GenTicTacToe.INFINITY * (self.max_depth - depth)
         if len(self.get_all_available_moves()) == 0:
             return 0
-        if depth == 4:
-            return self.heuristics(isMax, lastMove)
+        if depth == self.max_depth:
+            res = self.heuristics(depth)
+            return res
         return GenTicTacToe.PROCEED
 
 
-    def heuristics(self, isMax: bool, lastMove: Tuple):
+    def heuristics(self, depth: int):
         score = 0
         
         segments = self.extract_segments(self.board, self.m)
         
         for segment in segments:
-            score += self.cal_score(segment, isMax)
+            score += self.cal_score(segment, depth)
 
         return score
             
@@ -171,25 +209,24 @@ class GenTicTacToe():
         return segments
 
     
-    def cal_score(self, segment, isMax):
+    def cal_score(self, segment, depth):
         counts = self.count_values(segment)
+        ai_count = counts.get(self.AI, 0)
+        op_count = counts.get(self.OP, 0)
 
-        ai_count = counts[self.AI] if self.AI in counts else 0
-        op_count = counts[self.OP] if self.OP in counts else 0
+        # if ai_count == self.m:
+        #     return -GenTicTacToe.INFINITY * (self.max_depth - depth)
+        
+        # if op_count == self.m:
+        #     return GenTicTacToe.INFINITY * (self.max_depth - depth)
 
-        if ai_count == self.m:
-            return -GenTicTacToe.INFINITY
-        
-        if op_count == self.m:
-            return GenTicTacToe.INFINITY
-        
-        if op_count > 0:
-            if ai_count == 0:
-                return self.n ** op_count
-            else:
-                return 0
-        
-        return -1 * (self.n ** ai_count)
+        if ai_count > 0 and op_count > 0:
+            return 0  
+        elif op_count > 0:
+            return 10 ** op_count  
+        elif ai_count > 0:
+            return -1 * (10 ** (ai_count + 2))
+        return 0  
 
 
 
@@ -234,7 +271,7 @@ class GenTicTacToe():
     
   
     
-    def gameLoop(self):
+    def human_vs_ai(self):
         while True:
                 
             move = self.op_move()
@@ -259,3 +296,87 @@ class GenTicTacToe():
         self.print_board()
 
         return
+    
+
+    def ai_vs_online(self, teamId1, teamId2):
+        gameId = api.create_game(teamId1, teamId2, self.n, self.m)
+        
+        while True:
+            move = self.ai_move()
+            moveId = api.make_move(gameId, teamId1, f"{move[0]},{move[1]}")
+
+            if self.check_winner(self.aiMoveHistory, move):
+                print('YOU won')
+                break
+
+            if len(self.get_all_available_moves()) == 0:
+                print('TIE')
+                break
+
+            while True:
+                res = api.get_moves(gameId, "1") 
+                if res['moveId'] != moveId:
+                    op_move = res['move'].split(',')
+                    self.make_move(self.OP, op_move, self.opMoveHistory)
+                    break
+            
+            if self.check_winner(self.opMoveHistory, move):
+                print('OP won')
+                break
+
+            if len(self.get_all_available_moves()) == 0:
+                print('TIE')
+                break
+        
+        print("AI moves", self.aiMoveHistory)
+        print("OP moves", self.opMoveHistory)
+        self.print_board()
+
+        return
+        
+
+    
+    def online_vs_ai(self, teamId, gameId):
+        res = api.get_moves(gameId, "1")
+        op_move = res['move'].split(',')
+        self.make_move(self.OP, op_move, self.opMoveHistory)
+                     
+        while True:
+            move = self.ai_move()
+            moveId = api.make_move(gameId, teamId, f"{move[0]},{move[1]}")
+
+            if self.check_winner(self.opMoveHistory, move):
+                print('OP won')
+                break
+
+            if len(self.get_all_available_moves()) == 0:
+                print('TIE')
+                break
+
+            while True:
+                res = api.get_moves(gameId, "1") 
+                if res['moveId'] != moveId:
+                    op_move = res['move'].split(',')
+                    self.make_move(self.OP, op_move, self.opMoveHistory)
+                    break
+            
+            if self.check_winner(self.opMoveHistory, move):
+                print('OP won')
+                break
+
+            if len(self.get_all_available_moves()) == 0:
+                print('TIE')
+                break
+        
+        print("AI moves", self.aiMoveHistory)
+        print("OP moves", self.opMoveHistory)
+        self.print_board()
+
+        
+        
+
+
+                
+
+
+            
