@@ -1,5 +1,5 @@
 from typing import List, Tuple, Set
-import api
+# import api
 
 
 class GenTicTacToe():
@@ -121,15 +121,86 @@ class GenTicTacToe():
                 break
         
         return min_val
-    
+
     def evaluate(self, depth: int, isMax: bool, lastMove: Tuple):
         if isMax == True and self.check_winner(self.aiMoveHistory, lastMove):
-            return -1 * (self.max_depth - depth)
+            return -1 * GenTicTacToe.INFINITY
         if isMax == False and self.check_winner(self.opMoveHistory, lastMove):
-            return 1 * (self.max_depth - depth)
+            return 1 * GenTicTacToe.INFINITY
         if len(self.get_all_available_moves()) == 0:
             return 0
+        if depth == 4:
+            return self.heuristics(isMax, lastMove)
         return GenTicTacToe.PROCEED
+
+
+    def heuristics(self, isMax: bool, lastMove: Tuple):
+        score = 0
+        
+        segments = self.extract_segments(self.board, self.m)
+        
+        for segment in segments:
+            score += self.cal_score(segment, isMax)
+
+        return score
+            
+
+    def extract_segments(self, grid, m):
+        n = self.n
+        segments = []
+
+        if m > n:
+            return segments
+
+        for i in range(n):
+            for j in range(n - m + 1):
+                segments.append([grid[i][j + k] for k in range(m)])
+
+        for j in range(n):
+            for i in range(n - m + 1):
+                segments.append([grid[i + k][j] for k in range(m)])
+
+        for i in range(n - m + 1):
+            for j in range(n - m + 1):
+                segments.append([grid[i + k][j + k] for k in range(m)])
+
+        for i in range(n - m + 1):
+            for j in range(m - 1, n):
+                segments.append([grid[i + k][j - k] for k in range(m)])
+
+        return segments
+
+    
+    def cal_score(self, segment, isMax):
+        counts = self.count_values(segment)
+
+        ai_count = counts[self.AI] if self.AI in counts else 0
+        op_count = counts[self.OP] if self.OP in counts else 0
+
+        if ai_count == self.m:
+            return -GenTicTacToe.INFINITY
+        
+        if op_count == self.m:
+            return GenTicTacToe.INFINITY
+        
+        if op_count > 0:
+            if ai_count == 0:
+                return self.n ** op_count
+            else:
+                return 0
+        
+        return -1 * (self.n ** ai_count)
+
+
+
+    def count_values(self, segment):
+        value_counts = {}
+        for value in segment:
+            if value in value_counts:
+                value_counts[value] += 1
+            else:
+                value_counts[value] = 1
+        return value_counts
     
 
     
