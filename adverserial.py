@@ -11,8 +11,8 @@ class GenTicTacToe():
         self.AI = 'O'
         self.OP = 'X'
         self.m = m
-        self.max_depth = 4
-        self.radius = 2
+        self.max_depth = 5
+        self.radius = 1
         self.n = n
         self.board = self.create_board(self.n)
         self.opMoveHistory = set()
@@ -301,8 +301,8 @@ class GenTicTacToe():
     def ai_vs_online(self, teamId1, teamId2):
         gameId = api.create_game(teamId1, teamId2, self.n, self.m)
         
-        moveId = api.make_move(gameId, teamId1, f"{self.n // 2},{self.n // 2}")
         self.make_move(self.AI, (self.n // 2, self.n // 2), self.aiMoveHistory)
+        moveId = api.make_move(gameId, teamId1, f"{self.n // 2},{self.n // 2}")
 
         while True:
             self.print_board()
@@ -354,8 +354,8 @@ class GenTicTacToe():
             move = self.ai_move()
             moveId = api.make_move(gameId, teamId, f"{move[0]},{move[1]}")
 
-            if self.check_winner(self.opMoveHistory, move):
-                print('OP won')
+            if self.check_winner(self.aiMoveHistory, move):
+                print('AI won')
                 break
 
             if len(self.get_all_available_moves()) == 0:
@@ -367,7 +367,8 @@ class GenTicTacToe():
                 res = api.get_moves(gameId, "1") 
                 if res['moveId'] != moveId:
                     r, c = map(int, res['move'].split(','))
-                    self.make_move(self.OP, (r, c), self.opMoveHistory)
+                    move = (r, c)
+                    self.make_move(self.OP, move, self.opMoveHistory)
                     break
             
             if self.check_winner(self.opMoveHistory, move):

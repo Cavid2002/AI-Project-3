@@ -1,7 +1,6 @@
 import http.client
 import ast
 
-conn = http.client.HTTPSConnection("www.notexponential.com")
 url = "/aip2pgaming/api/index.php"
 id = '3672'
 key = '6f7504789dda4c53374b'
@@ -9,16 +8,19 @@ key = '6f7504789dda4c53374b'
 headers = {
   'userId': id,
   'x-api-key': key,
-  'Content-Type': 'application/x-www-form-urlencoded'
+  'Content-Type': 'application/x-www-form-urlencoded',
+  'Cookie': 'humans_21909=1'
 }
 
 def make_post_request(parameters: str) -> str:
+    conn = http.client.HTTPSConnection("www.notexponential.com")
     conn.request("POST", url, parameters, headers)
     response = conn.getresponse()
     data = response.read().decode()
     return ast.literal_eval(data)
 
 def make_get_request(parameters: str) -> str:
+    conn = http.client.HTTPSConnection("www.notexponential.com")
     full_path = url + "?" + parameters
     conn.request("GET", full_path, None, headers)
     response = conn.getresponse()
@@ -80,6 +82,13 @@ def get_my_games() -> dict:
     assert res['code'] == 'OK', 'get_my_games'
     return res
 
+def get_my_open_games() -> dict:
+    payload = f"type=myOpenGames"
+    res = make_get_request(payload)
+    print(res)
+    assert res['code'] == 'OK', 'get_my_games'
+    return res
+
 def make_move(gameId: str, teamId: str, move: str) -> dict:
     payload = f"type=move&gameId={gameId}&teamId={teamId}&move={move}"
     res = make_post_request(payload)
@@ -117,7 +126,7 @@ def get_board_map(gameId: str) -> dict:
 
 
 
-# teamId = create_team("TEST2")
+# teamId = create_team("TEST23")
 
 
 # add_team_member("1453", "3675")
