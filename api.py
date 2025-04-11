@@ -4,9 +4,7 @@ import ast
 conn = http.client.HTTPSConnection("www.notexponential.com")
 url = "/aip2pgaming/api/index.php"
 id = '3672'
-key = '52eaecbe714f070fdf20'
-teamID = "1453"
-teamID2 = "1454"
+key = '6f7504789dda4c53374b'
 
 headers = {
   'userId': id,
@@ -87,12 +85,11 @@ def make_move(gameId: str, teamId: str, move: str) -> dict:
     res = make_post_request(payload)
     print(res)
     assert res['code'] == 'OK', 'make_move'
-    return res['moveId']
+    return str(res['moveId'])
 
 def get_moves(gameId: str, count: str) -> dict:
     payload = f"type=moves&gameId={gameId}&count={count}"
     res = make_get_request(payload)
-    print(res)
     assert res['code'] == 'OK', 'get_moves'
     return res['moves'][0]
 
@@ -116,6 +113,9 @@ def get_board_map(gameId: str) -> dict:
     print(res)
     assert res['code'] == 'OK', 'get_board_map'
     return res
+
+
+
 
 # teamId = create_team("TEST2")
 

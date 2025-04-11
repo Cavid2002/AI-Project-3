@@ -5,13 +5,13 @@ import api
 class GenTicTacToe():
 
     PROCEED = 0x3F3F3F3F
-    INFINITY = 1000000
+    INFINITY = 1000000000
 
     def __init__(self, n: int, m: int):
         self.AI = 'O'
         self.OP = 'X'
         self.m = m
-        self.max_depth = 3
+        self.max_depth = 4
         self.radius = 2
         self.n = n
         self.board = self.create_board(self.n)
@@ -225,7 +225,7 @@ class GenTicTacToe():
         elif op_count > 0:
             return 10 ** op_count  
         elif ai_count > 0:
-            return -1 * (10 ** (ai_count + 2))
+            return -1 * (10 ** (ai_count))
         return 0  
 
 
@@ -301,7 +301,28 @@ class GenTicTacToe():
     def ai_vs_online(self, teamId1, teamId2):
         gameId = api.create_game(teamId1, teamId2, self.n, self.m)
         
+        moveId = api.make_move(gameId, teamId1, f"{self.n // 2},{self.n // 2}")
+        self.make_move(self.AI, (self.n // 2, self.n // 2), self.aiMoveHistory)
+
         while True:
+            self.print_board()
+            while True:
+                res = api.get_moves(gameId, "1") 
+                if res['moveId'] != moveId:
+                    r, c = map(int, res['move'].split(','))
+                    move = (r, c)
+                    self.make_move(self.OP, move, self.opMoveHistory)
+                    break
+            
+            if self.check_winner(self.opMoveHistory, move):
+                print('OP won')
+                break
+
+            if len(self.get_all_available_moves()) == 0:
+                print('TIE')
+                break
+            
+            self.print_board()
             move = self.ai_move()
             moveId = api.make_move(gameId, teamId1, f"{move[0]},{move[1]}")
 
@@ -313,20 +334,6 @@ class GenTicTacToe():
                 print('TIE')
                 break
 
-            while True:
-                res = api.get_moves(gameId, "1") 
-                if res['moveId'] != moveId:
-                    op_move = res['move'].split(',')
-                    self.make_move(self.OP, op_move, self.opMoveHistory)
-                    break
-            
-            if self.check_winner(self.opMoveHistory, move):
-                print('OP won')
-                break
-
-            if len(self.get_all_available_moves()) == 0:
-                print('TIE')
-                break
         
         print("AI moves", self.aiMoveHistory)
         print("OP moves", self.opMoveHistory)
@@ -338,10 +345,12 @@ class GenTicTacToe():
     
     def online_vs_ai(self, teamId, gameId):
         res = api.get_moves(gameId, "1")
-        op_move = res['move'].split(',')
-        self.make_move(self.OP, op_move, self.opMoveHistory)
+        r, c = map(int, res['move'].split(','))
+        move = (r, c)
+        self.make_move(self.OP, move, self.opMoveHistory)
                      
         while True:
+            self.print_board()
             move = self.ai_move()
             moveId = api.make_move(gameId, teamId, f"{move[0]},{move[1]}")
 
@@ -353,11 +362,12 @@ class GenTicTacToe():
                 print('TIE')
                 break
 
+            self.print_board()
             while True:
                 res = api.get_moves(gameId, "1") 
                 if res['moveId'] != moveId:
-                    op_move = res['move'].split(',')
-                    self.make_move(self.OP, op_move, self.opMoveHistory)
+                    r, c = map(int, res['move'].split(','))
+                    self.make_move(self.OP, (r, c), self.opMoveHistory)
                     break
             
             if self.check_winner(self.opMoveHistory, move):
