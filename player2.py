@@ -1,8 +1,8 @@
 from adverserial import GenTicTacToe
 
-teamID2 = "1454"
+teamID2 = "1453"
 
 
-game = GenTicTacToe(5, 3)
+game = GenTicTacToe(7, 5)
 
-game.online_vs_ai(teamID2, 5238)
+game.online_vs_ai(teamID2, 5281)

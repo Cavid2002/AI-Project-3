@@ -1,4 +1,5 @@
 from typing import List, Tuple, Set
+from multiprocessing import Process
 import api
 
 
@@ -11,7 +12,7 @@ class GenTicTacToe():
         self.AI = 'O'
         self.OP = 'X'
         self.m = m
-        self.max_depth = 5
+        self.max_depth = 4
         self.radius = 1
         self.n = n
         self.board = self.create_board(self.n)
@@ -109,7 +110,7 @@ class GenTicTacToe():
         moves = self.get_all_neighbouring_moves()
         for move in moves:
             self.make_move(self.AI, move, self.aiMoveHistory)
-            val = self.minimax(True, 0, -GenTicTacToe.INFINITY, GenTicTacToe.INFINITY, move)
+            val = self.minimax(True, 1, -GenTicTacToe.INFINITY, GenTicTacToe.INFINITY, move)
             self.unmake_move(move, self.aiMoveHistory)
             print(val)
             if val <= best_val:
@@ -214,11 +215,11 @@ class GenTicTacToe():
         ai_count = counts.get(self.AI, 0)
         op_count = counts.get(self.OP, 0)
 
-        # if ai_count == self.m:
-        #     return -GenTicTacToe.INFINITY * (self.max_depth - depth)
+        if ai_count == self.m:
+            return -GenTicTacToe.INFINITY * (self.max_depth - depth)
         
-        # if op_count == self.m:
-        #     return GenTicTacToe.INFINITY * (self.max_depth - depth)
+        if op_count == self.m:
+            return GenTicTacToe.INFINITY * (self.max_depth - depth)
 
         if ai_count > 0 and op_count > 0:
             return 0  

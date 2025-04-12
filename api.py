@@ -99,6 +99,7 @@ def make_move(gameId: str, teamId: str, move: str) -> dict:
 def get_moves(gameId: str, count: str) -> dict:
     payload = f"type=moves&gameId={gameId}&count={count}"
     res = make_get_request(payload)
+    print(res)
     assert res['code'] == 'OK', 'get_moves'
     return res['moves'][0]
 
