@@ -1,5 +1,5 @@
 from typing import List, Tuple, Set
-from multiprocessing import Process
+from multiprocessing import Process, Pool, cpu_count
 import api
 
 
@@ -118,8 +118,8 @@ class GenTicTacToe():
                 best_move = (move[0], move[1])
 
         self.make_move(self.AI, best_move, self.aiMoveHistory)
-        return best_move
-    
+        return best_move    
+
 
     def minimax(self, isMax: bool, depth: int, alpha: int, beta: int, lastMove: Tuple) -> int:
         res = self.evaluate(depth, isMax, lastMove)
@@ -284,7 +284,7 @@ class GenTicTacToe():
                 print('TIE')
                 break
 
-            move = self.ai_move()
+            move = ai_move_parralel(self)
             if self.check_winner(self.aiMoveHistory, move):
                 print('AI won')
                 break
@@ -324,7 +324,7 @@ class GenTicTacToe():
                 break
             
             self.print_board()
-            move = self.ai_move()
+            move = ai_move_parralel(self)
             moveId = api.make_move(gameId, teamId1, f"{move[0]},{move[1]}")
 
             if self.check_winner(self.aiMoveHistory, move):
@@ -352,7 +352,7 @@ class GenTicTacToe():
                      
         while True:
             self.print_board()
-            move = self.ai_move()
+            move = ai_move_parralel(self)
             moveId = api.make_move(gameId, teamId, f"{move[0]},{move[1]}")
 
             if self.check_winner(self.aiMoveHistory, move):
@@ -386,6 +386,30 @@ class GenTicTacToe():
 
         
         
+def ai_move_worker(args):
+    game: GenTicTacToe = args[0]
+    move = args[1]
+    game.make_move(game.AI, move, game.aiMoveHistory)
+    val = game.minimax(True, 1, -GenTicTacToe.INFINITY, GenTicTacToe.INFINITY, move)
+    game.unmake_move(move, game.aiMoveHistory)
+    return (val, move)
+
+
+def ai_move_parralel(game: GenTicTacToe):
+    moves = game.get_all_neighbouring_moves()
+    
+    with Pool(processes=cpu_count()) as p:
+        results = p.map(ai_move_worker, [(game, move) for move in moves])
+
+    best_move = (-1, -1)
+    best_val = GenTicTacToe.INFINITY ** 2
+    for res in results:
+        val, move = res
+        if val <= best_val:
+            best_val = val
+            best_move = (move[0], move[1])
+    game.make_move(game.AI, best_move, game.aiMoveHistory)
+    return best_move
 
 
                 
