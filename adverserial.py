@@ -81,7 +81,6 @@ class GenTicTacToe():
         
     
     def op_move(self) -> Tuple[int, int]:
-        self.print_board()
         while True:
             r, c = map(int, input("Select row, col:").split())
             if self.move_isvalid(r, c):
@@ -274,7 +273,7 @@ class GenTicTacToe():
     
     def human_vs_ai(self):
         while True:
-                
+            self.print_board()
             move = self.op_move()
             if self.check_winner(self.opMoveHistory, move):
                 print('OP won')
@@ -324,7 +323,7 @@ class GenTicTacToe():
                 break
             
             self.print_board()
-            move = ai_move_parralel(self)
+            move = self.ai_move()
             moveId = api.make_move(gameId, teamId1, f"{move[0]},{move[1]}")
 
             if self.check_winner(self.aiMoveHistory, move):
@@ -352,7 +351,7 @@ class GenTicTacToe():
                      
         while True:
             self.print_board()
-            move = ai_move_parralel(self)
+            move = self.ai_move()
             moveId = api.make_move(gameId, teamId, f"{move[0]},{move[1]}")
 
             if self.check_winner(self.aiMoveHistory, move):
