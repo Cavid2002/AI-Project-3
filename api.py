@@ -126,7 +126,7 @@ def get_board_map(gameId: str) -> dict:
 
 
 
-
+# create_game(1448, 1453, 6, 5)
 # teamId = create_team("TEST23")
 
 

@@ -12,12 +12,12 @@ class GenTicTacToe():
         self.AI = 'O'
         self.OP = 'X'
         self.m = m
-        self.max_depth = 4
+        self.max_depth = 5
         self.radius = 1
         self.n = n
         self.board = self.create_board(self.n)
-        self.opMoveHistory = set()
-        self.aiMoveHistory = set()
+        self.opMoveHistory = []
+        self.aiMoveHistory = []
 
     
     def create_board(self, n: int) -> List[List[str]]:
@@ -53,8 +53,12 @@ class GenTicTacToe():
     def get_all_neighbouring_moves(self) -> List[Tuple]:
         radius = self.radius
         all_moves = []
-        
-        for move in self.opMoveHistory:
+        op_n = 3
+        ai_n = op_n * 2
+        recentOpMoves = self.opMoveHistory[-op_n:] if len(self.opMoveHistory) >= op_n else self.opMoveHistory[:] 
+        recentAIMoves = self.aiMoveHistory[-ai_n:] if len(self.aiMoveHistory) >= ai_n else self.aiMoveHistory[:]
+
+        for move in recentOpMoves:
             startr = max(move[0] - radius, 0) 
             endr = min(move[0] + radius, self.n - 1)  
             startc = max(move[1] - radius, 0) 
@@ -65,7 +69,7 @@ class GenTicTacToe():
                         all_moves.append((i, j))
         
         
-        for move in self.aiMoveHistory:
+        for move in recentAIMoves:
             startr = max(move[0] - radius, 0) 
             endr = min(move[0] + radius, self.n - 1)  
             startc = max(move[1] - radius, 0) 
@@ -90,15 +94,15 @@ class GenTicTacToe():
         return (r, c)
     
 
-    def make_move(self, side: str, move: Tuple, moveHistory: Set[Tuple]):
+    def make_move(self, side: str, move: Tuple, moveHistory: List[Tuple]):
         if move == (-1, -1):
             print("ERROR INVALID MOVE")
             exit(1)
-        moveHistory.add((move[0], move[1]))
+        moveHistory.append((move[0], move[1]))
         self.board[move[0]][move[1]] = side
 
     
-    def unmake_move(self, move: Tuple, moveHistory: Set[Tuple]):
+    def unmake_move(self, move: Tuple, moveHistory: List[Tuple]):
         moveHistory.remove((move[0], move[1]))
         self.board[move[0]][move[1]] = '-'
     
@@ -126,12 +130,12 @@ class GenTicTacToe():
             return res
         
         if isMax == True:
-            return self.maximizer(depth, lastMove, alpha, beta)
+            return self.maximizer(depth, alpha, beta)
         
-        return self.minimizer(depth, lastMove, alpha, beta)
+        return self.minimizer(depth, alpha, beta)
     
 
-    def maximizer(self, depth: int, lastMove: Tuple ,alpha: int, beta: int):
+    def maximizer(self, depth: int, alpha: int, beta: int):
         max_val = -GenTicTacToe.INFINITY
         for move in self.get_all_neighbouring_moves():
             self.make_move(self.OP, move, self.opMoveHistory)
@@ -145,7 +149,7 @@ class GenTicTacToe():
         
         return max_val
     
-    def minimizer(self, depth: int, lastMove: Tuple, alpha: int, beta: int):
+    def minimizer(self, depth: int, alpha: int, beta: int):
         min_val = GenTicTacToe.INFINITY
         for move in self.get_all_neighbouring_moves():
             self.make_move(self.AI, move, self.aiMoveHistory)
@@ -298,7 +302,7 @@ class GenTicTacToe():
         return
     
 
-    def ai_vs_online(self, teamId1, teamId2):
+    def ai_vs_online(self, teamId1: str, teamId2: str):
         gameId = api.create_game(teamId1, teamId2, self.n, self.m)
         
         self.make_move(self.AI, (self.n // 2, self.n // 2), self.aiMoveHistory)
@@ -323,7 +327,7 @@ class GenTicTacToe():
                 break
             
             self.print_board()
-            move = self.ai_move()
+            move = ai_move_parralel(self)
             moveId = api.make_move(gameId, teamId1, f"{move[0]},{move[1]}")
 
             if self.check_winner(self.aiMoveHistory, move):
@@ -351,7 +355,7 @@ class GenTicTacToe():
                      
         while True:
             self.print_board()
-            move = self.ai_move()
+            move = ai_move_parralel(self)
             moveId = api.make_move(gameId, teamId, f"{move[0]},{move[1]}")
 
             if self.check_winner(self.aiMoveHistory, move):
