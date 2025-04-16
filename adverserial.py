@@ -12,8 +12,9 @@ class GenTicTacToe():
         self.AI = 'O'
         self.OP = 'X'
         self.m = m
-        self.max_depth = 5
-        self.radius = 1
+        self.max_depth = 4  
+        self.radius = 2 
+        self.move_count = 4
         self.n = n
         self.board = self.create_board(self.n)
         self.opMoveHistory = []
@@ -53,7 +54,7 @@ class GenTicTacToe():
     def get_all_neighbouring_moves(self) -> List[Tuple]:
         radius = self.radius
         all_moves = []
-        op_n = 3
+        op_n = self.move_count
         ai_n = op_n * 2
         recentOpMoves = self.opMoveHistory[-op_n:] if len(self.opMoveHistory) >= op_n else self.opMoveHistory[:] 
         recentAIMoves = self.aiMoveHistory[-ai_n:] if len(self.aiMoveHistory) >= ai_n else self.aiMoveHistory[:]
@@ -219,10 +220,10 @@ class GenTicTacToe():
         op_count = counts.get(self.OP, 0)
 
         if ai_count == self.m:
-            return -GenTicTacToe.INFINITY * (self.max_depth - depth)
+            return -GenTicTacToe.INFINITY
         
         if op_count == self.m:
-            return GenTicTacToe.INFINITY * (self.max_depth - depth)
+            return GenTicTacToe.INFINITY
 
         if ai_count > 0 and op_count > 0:
             return 0  

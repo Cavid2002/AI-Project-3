@@ -4,5 +4,6 @@ from adverserial import GenTicTacToe
 
 if __name__ == '__main__':
     teamID2 = "1453"
-    game = GenTicTacToe(5, 4)
-    game.online_vs_ai(teamID2, 5406)
+    gameID = "5458"
+    game = GenTicTacToe(6, 5)
+    game.online_vs_ai(teamID2, gameID)
